@@ -5,7 +5,6 @@
 # Possible speedups:
 # TODO: Instead of redrawing the entire grid every frame, only update the cells that have changed since the last frame
 # TODO: Rather than iterating over every cell in the grid every frame, only update cells that are near living cells
-# TODO: Use Numpy array operations
 # TODO: Parallelize computations?
 
 
@@ -28,43 +27,61 @@ myfont = pygame.font.SysFont("monospace", 16)
 
 # Function to update the game state and draw cells
 def update(surface, cur, sz, gen):
-    nxt = np.zeros((cur.shape[0], cur.shape[1]))
+    nxt = np.zeros_like(cur)
+    
+    # Use Numpy's efficient array operations for neighbor counting and updating
+    neighbor_count = (
+        np.roll(cur, (-1, -1), axis=(0, 1)) + np.roll(cur, (-1, 0), axis=(0, 1)) +
+        np.roll(cur, (-1, 1), axis=(0, 1)) + np.roll(cur, (0, -1), axis=(0, 1)) +
+        np.roll(cur, (0, 1), axis=(0, 1)) + np.roll(cur, (1, -1), axis=(0, 1)) +
+        np.roll(cur, (1, 0), axis=(0, 1)) + np.roll(cur, (1, 1), axis=(0, 1))
+    )
+    
+    # Apply Conway's Game of Life rules using Numpy's broadcasting
+    nxt[(cur == 1) & ((neighbor_count < 2) | (neighbor_count > 3))] = 0
+    nxt[(cur == 1) & ((neighbor_count == 2) | (neighbor_count == 3))] = 1
+    nxt[(cur == 0) & (neighbor_count == 3)] = 1
 
-    # Iterate over each cell in the current state
-    for r, c in np.ndindex(cur.shape):
-        # Count the number of alive neighbors for each cell
-        num_alive = np.sum(cur[r-1:r+2, c-1:c+2]) - cur[r, c]
+    # Update cell colors directly using Numpy operations
+    alive_indices = np.argwhere(cur == 1)
+    dead_indices = np.argwhere(cur == 0)
+    
+    # Convert indices to tuples for set_at function
+    alive_indices = [(idx[1] * sz, idx[0] * sz) for idx in alive_indices]
+    dead_indices = [(idx[1] * sz, idx[0] * sz) for idx in dead_indices]
+    
+    surface.fill(col_background)
+    for pos in alive_indices:
+        pygame.draw.rect(surface, col_alive, pygame.Rect(pos[0], pos[1], sz, sz))
+    for pos in dead_indices:
+        pygame.draw.rect(surface, col_background, pygame.Rect(pos[0], pos[1], sz, sz))
 
-        # Update cell colors based on Conway's Game of Life rules
-        if cur[r, c] == 1 and num_alive < 2 or num_alive > 3:
-            col = col_about_to_die
-        elif (cur[r, c] == 1 and 2 <= num_alive <= 3) or (cur[r, c] == 0 and num_alive == 3):
-            nxt[r, c] = 1
-            col = col_alive
-
-        # Draw cells on the surface with appropriate colors
-        col = col if cur[r, c] == 1 else col_background
-        pygame.draw.rect(surface, col, (c*sz, r*sz, sz-1, sz-1))
-         
-    # Display the current generation information on the surface
+    # Apply color change for cells about to die
+    about_to_die_indices = np.argwhere((cur == 1) & ((neighbor_count < 2) | (neighbor_count > 3)))
+    about_to_die_indices = [(idx[1] * sz, idx[0] * sz) for idx in about_to_die_indices]
+    for pos in about_to_die_indices:
+        pygame.draw.rect(surface, col_about_to_die, pygame.Rect(pos[0], pos[1], sz, sz))
+    
     gentext = myfont.render("Generation: {0}".format(gen), 1, (255, 255, 255))
-    surface.blit(gentext, (0, len(cur)*sz-16))        
-            
+    surface.blit(gentext, (0, cur.shape[0] * sz - 16))
+    
     return nxt
+
+
 
 # Initialize the game grid with a given x and y size
 def init(dimx, dimy, pattern):
     cells = np.zeros((dimy, dimx))
-    cells = pattern
-    
+    cells[:pattern.shape[0], :pattern.shape[1]] = pattern
     return cells
+
 
 # Initialize the game grid with gliders pattern
 def init_gliders(dimx, dimy, pattern):
     cells = np.zeros((dimy, dimx))
 
     # Define patterns for one or two Gosper's glider guns
-    if('1' in pattern):
+    if pattern == '1':
         # A single Gosper's glider gun creating gliders   
         pattern = np.array([[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
                             [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
@@ -75,7 +92,7 @@ def init_gliders(dimx, dimy, pattern):
                             [0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
                             [0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
                             [0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]])
-    if('2' in pattern):
+    elif pattern == '2':
         # Two Gosper's glider gun creating gliders   
         pattern = np.array([[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
                             [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
@@ -97,44 +114,43 @@ def main(dimx, dimy, cellsize, pattern):
     pygame.init()
     surface = pygame.display.set_mode((dimx * cellsize, dimy * cellsize))
     pygame.display.set_caption("Py Game of Life")
-    
-    # Initialize the game grid based on user input
-    if('yes' in pattern):
+
+    if pattern == '1':
+        cells = init_gliders(dimx, dimy, pattern)
+    elif pattern == '2':
         cells = init_gliders(dimx, dimy, pattern)
     else:
         cells = init(dimx, dimy, pattern)
+    
+    gen = 0
+    clock = pygame.time.Clock()
+    running = True
 
-
-    gen= 0
-    while True:
+    while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                pygame.quit()
-                exit()
-                return
+                running = False
         
-        # Fill the surface with the grid color
-        surface.fill(col_grid)
-        # Update the game state and draw cells
         cells = update(surface, cells, cellsize, gen)
         pygame.display.update()
-        gen+= 1
- 
+        gen += 1
+        # clock.tick(10)  # Limit frame rate to 10 FPS
 
 # Get user input to determine the game setup
 gliders = input("Run a Gosper's Glider Gun, creating gliders? (Yes, No): ").lower()
-if(gliders == 'yes'):
-    gliders += input("1 or 2 Gliders? (1,2): ")
-if(gliders == 'no'):
-    n= int(input("Enter world width: "))
-    m= int(input("Enter world height: "))
-    s= int(input("Enter cell size: "))
-    c= float(input("Determine chance of each cell starting with a life (0:1): "))
-    pattern = np.random.choice([0, 1], size=(n,m), p=[1-c, c])
-
-if __name__ == "__main__":
-    if(gliders == 'no'):
-        main(n, m, s, pattern)
-    if('yes' in gliders):
-        main(120, 90, 8, gliders)
+if gliders == 'yes':
+    glider_count = input("1 or 2 Gliders? (1, 2): ")
+    if glider_count == '1' or glider_count == '2':
+        main(120, 90, 8, glider_count)
+    else:
+        print("Invalid input for glider count.")
+elif gliders == 'no':
+    n = int(input("Enter world width: "))
+    m = int(input("Enter world height: "))
+    s = int(input("Enter cell size: "))
+    c = float(input("Determine chance of each cell starting with a life (0:1): "))
+    pattern = np.random.choice([0, 1], size=(n, m), p=[1 - c, c])
+    main(n, m, s, pattern)
+else:
+    print("Invalid input.")
 
