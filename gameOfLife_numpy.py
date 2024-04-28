@@ -13,10 +13,10 @@ import numpy as np
 # import win32gui
 # import win32con
 
+ # Initialize pygame font for displaying generation information
 pygame.font.init()
 
 # Define colors for the cells and background
-col_about_to_die = (200, 200, 225)
 col_about_to_die = (255, 0, 0) #red
 col_alive = (255, 255, 215)
 col_background = (10, 10, 40)
@@ -27,9 +27,10 @@ myfont = pygame.font.SysFont("monospace", 16)
 
 # Function to update the game state and draw cells
 def update(surface, cur, sz, gen):
+    # Create a new array for the next generation
     nxt = np.zeros_like(cur)
     
-    # Use Numpy's efficient array operations for neighbor counting and updating
+    # Use Numpy array operations for neighbor counting and updating
     neighbor_count = (
         np.roll(cur, (-1, -1), axis=(0, 1)) + np.roll(cur, (-1, 0), axis=(0, 1)) +
         np.roll(cur, (-1, 1), axis=(0, 1)) + np.roll(cur, (0, -1), axis=(0, 1)) +
@@ -37,7 +38,7 @@ def update(surface, cur, sz, gen):
         np.roll(cur, (1, 0), axis=(0, 1)) + np.roll(cur, (1, 1), axis=(0, 1))
     )
     
-    # Apply Conway's Game of Life rules using Numpy's broadcasting
+    # Apply Conway's Game of Life rules using Numpy broadcasting
     nxt[(cur == 1) & ((neighbor_count < 2) | (neighbor_count > 3))] = 0
     nxt[(cur == 1) & ((neighbor_count == 2) | (neighbor_count == 3))] = 1
     nxt[(cur == 0) & (neighbor_count == 3)] = 1
@@ -50,7 +51,10 @@ def update(surface, cur, sz, gen):
     alive_indices = [(idx[1] * sz, idx[0] * sz) for idx in alive_indices]
     dead_indices = [(idx[1] * sz, idx[0] * sz) for idx in dead_indices]
     
+    # Fill the surface with the background color
     surface.fill(col_background)
+    
+    # Draw alive and dead cells with their respective color
     for pos in alive_indices:
         pygame.draw.rect(surface, col_alive, pygame.Rect(pos[0], pos[1], sz, sz))
     for pos in dead_indices:
@@ -62,14 +66,15 @@ def update(surface, cur, sz, gen):
     for pos in about_to_die_indices:
         pygame.draw.rect(surface, col_about_to_die, pygame.Rect(pos[0], pos[1], sz, sz))
     
+    # Render and display generation information
     gentext = myfont.render("Generation: {0}".format(gen), 1, (255, 255, 255))
     surface.blit(gentext, (0, cur.shape[0] * sz - 16))
     
+    # Return new array
     return nxt
 
 
-
-# Initialize the game grid with a given x and y size
+# Initialize the game grid with a given x and y size and an optional pattern
 def init(dimx, dimy, pattern):
     cells = np.zeros((dimy, dimx))
     cells[:pattern.shape[0], :pattern.shape[1]] = pattern
@@ -105,16 +110,18 @@ def init_gliders(dimx, dimy, pattern):
                             [0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0]])
 
     # Position the pattern in the game grid
-    pos = (3,3)
+    pos = (3,3) # Position where the pattern starts
     cells[pos[0]:pos[0]+pattern.shape[0], pos[1]:pos[1]+pattern.shape[1]] = pattern
     return cells
 
 # Main function to run the game
 def main(dimx, dimy, cellsize, pattern):
+    # Initialize game state
     pygame.init()
     surface = pygame.display.set_mode((dimx * cellsize, dimy * cellsize))
     pygame.display.set_caption("Py Game of Life")
 
+    # Initialize based on user input
     if pattern == '1':
         cells = init_gliders(dimx, dimy, pattern)
     elif pattern == '2':
@@ -126,6 +133,7 @@ def main(dimx, dimy, cellsize, pattern):
     clock = pygame.time.Clock()
     running = True
 
+    # Game loop
     while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
