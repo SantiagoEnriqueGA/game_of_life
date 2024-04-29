@@ -115,16 +115,16 @@ def init_gliders(dimx, dimy, pattern):
     return cells
 
 # Main function to run the game
-def main(dimx, dimy, cellsize, pattern):
+def main(dimx, dimy, cellsize, glider_count, pattern):
     # Initialize game state
     pygame.init()
     surface = pygame.display.set_mode((dimx * cellsize, dimy * cellsize))
     pygame.display.set_caption("Py Game of Life")
 
     # Initialize based on user input
-    if pattern == '1':
+    if glider_count == '1':
         cells = init_gliders(dimx, dimy, pattern)
-    elif pattern == '2':
+    elif glider_count == '2':
         cells = init_gliders(dimx, dimy, pattern)
     else:
         cells = init(dimx, dimy, pattern)
@@ -158,7 +158,7 @@ elif gliders == 'no':
     s = int(input("Enter cell size: "))
     c = float(input("Determine chance of each cell starting with a life (0:1): "))
     pattern = np.random.choice([0, 1], size=(n, m), p=[1 - c, c])
-    main(n, m, s, pattern)
+    main(n, m, s, None, pattern)
 else:
     print("Invalid input.")
 
