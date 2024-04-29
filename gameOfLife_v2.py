@@ -2,6 +2,8 @@
 # SEGA97
 # Simulation of Conway's Game of Life in pygame
 # ---------------------------------------------------------------------------
+# Updated to user Nunpy array operations
+# ---------------------------------------------------------------------------
 # Possible speedups:
 # TODO: Instead of redrawing the entire grid every frame, only update the cells that have changed since the last frame
 # TODO: Rather than iterating over every cell in the grid every frame, only update cells that are near living cells
