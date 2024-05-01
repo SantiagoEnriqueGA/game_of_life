@@ -14,10 +14,8 @@
 
 import pygame
 import numpy as np
-# import win32gui
-# import win32con
 
- # Initialize pygame font for displaying generation information
+# Initialize pygame font for displaying generation information
 pygame.font.init()
 
 # Define colors for the cells and background
@@ -157,7 +155,6 @@ def main(dimx, dimy, cellsize, wrap, glider_count=None, pattern=None):
             if event.type == pygame.QUIT:
                 running = False
         
-        # update(surface, cells, cellsize, gen, changed_indices, wrap)
         cells = update(surface, cells, cellsize, gen, changed_indices, wrap)
         pygame.display.update()
         gen += 1
