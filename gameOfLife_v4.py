@@ -7,7 +7,8 @@
 #     Dropped coloring of cells about to die.
 #     Added option to wrap cells or not based on input
 # V4: Function decomposition, broke down the main function into smaller functions 
-#     for initialization, event handling, and game loop execution
+#       for initialization, event handling, and game loop execution
+#     Implemented Pause and Resume functionality 
 # ---------------------------------------------------------------------------
 
 import pygame
@@ -15,7 +16,7 @@ import numpy as np
 
 # Constants
 COLORS = {
-    'about_to_die': (255, 0, 0),
+    'pause': (255, 0, 0),
     'alive': (255, 255, 215),
     'background': (10, 10, 40),
     'grid': (30, 30, 60),
@@ -23,6 +24,7 @@ COLORS = {
 }
 pygame.init()
 FONT = pygame.font.SysFont("monospace", 16)
+PAUSE_TEXT = pygame.font.SysFont('monospace', 32).render('Paused, press R to resume', True, pygame.color.Color(COLORS['pause']))
 
 def init_game_state(dimx, dimy, pattern=None, glider_count=None):
     cells = np.zeros((dimy, dimx))
@@ -119,9 +121,21 @@ def render_generation_info(surface, gen):
 
 def handle_events():
     for event in pygame.event.get():
+        keys = pygame.key.get_pressed()
         if event.type == pygame.QUIT:
-            return False
-    return True
+            return False, 'stopped'
+        elif event.type == pygame.KEYDOWN and keys[pygame.K_p]:
+            return True, 'paused'
+    return True, 'running'
+
+def handle_pause():
+    for event in pygame.event.get():
+        keys = pygame.key.get_pressed()
+        if event.type == pygame.QUIT:
+            return False, 'stopped'
+        elif event.type == pygame.KEYDOWN and keys[pygame.K_r]:
+            return 'running'
+    return 'paused'
 
 def main(dimx, dimy, cellsize, wrap, glider_count=None, pattern=None):
     surface = pygame.display.set_mode((dimx * cellsize, dimy * cellsize))
@@ -132,15 +146,24 @@ def main(dimx, dimy, cellsize, wrap, glider_count=None, pattern=None):
     gen = 0
     clock = pygame.time.Clock()
     running = True
+    state = 'running'
 
     while running:
-        running = handle_events()
-        cells, changed_indices = update_game_state(cells, cellsize, wrap)  # Update cells and get changed indices
-        draw_cells(surface, cells, cellsize, changed_indices)
-        render_generation_info(surface, gen)
-        # clock.tick(1)  # Limit frame rate to 1 FPS
-        pygame.display.update()
-        gen += 1
+        running, state = handle_events()
+        if state == 'running':
+            cells, changed_indices = update_game_state(cells, cellsize, wrap)  # Update cells and get changed indices
+            draw_cells(surface, cells, cellsize, changed_indices)
+            render_generation_info(surface, gen)
+            # clock.tick(1)  # Limit frame rate to 1 FPS
+            pygame.display.update()
+            gen += 1
+
+        while state == 'paused':
+            # surface.fill(COLORS['background'])  # Clear the screen
+            text_rect = PAUSE_TEXT.get_rect(center=(surface.get_width() // 2, surface.get_height() // 2))
+            surface.blit(PAUSE_TEXT, text_rect)
+            state = handle_pause()
+            pygame.display.flip()
 
 # Input handling and game initialization
 wrap_input = input("Do you want to wrap the cells? (Yes, No): ").lower()
