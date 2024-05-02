@@ -158,7 +158,7 @@ def main(dimx, dimy, cellsize, wrap, glider_count=None, pattern=None):
         cells = update(surface, cells, cellsize, gen, changed_indices, wrap)
         pygame.display.update()
         gen += 1
-        # clock.tick(10)  # Limit frame rate to 10 FPS
+        # clock.tick(1)  # Limit frame rate to 1 FPS
 
 # Get user input to determine the game setup
 wrap = input("Do you want to wrap the cells? (Yes, No): ").lower()
