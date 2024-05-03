@@ -17,29 +17,32 @@ import numpy as np
 
 # Constants
 COLORS = {
-    'pause': (255, 0, 0),
-    'alive': (255, 255, 215),
-    'background': (10, 10, 40),
-    'grid': (30, 30, 60),
+    'pause': (255, 0, 0),  # Pause text color
+    'alive': (255, 255, 215),  # Color for living cells
+    'background': (10, 10, 40),  # Background color
+    'grid': (30, 30, 60),  # Grid color
     # 'text': (255, 255, 255),
-    'text': 'red',
+    'text': 'red',  # Text color
 }
 GAME_VARS = {
-    'start' : None,
-    'wrap' : None,
-    'glider' : None,
-    'glider_count' : None,
-    's_size' : None,
-    'c_size' : None,
-    'c_prob' : None
+    'start': None,  # Game start flag
+    'wrap': None,  # Wrap cells flag
+    'glider': None,  # Gosper's glider gun flag
+    'glider_count': None,  # Number of glider guns
+    's_size': None,  # World size
+    'c_size': None,  # Cell size
+    'c_prob': None  # Probability of cells being alive initially
 }
 
+# Initialize Pygame
 pygame.init()
 FONT = pygame.font.SysFont("monospace", 16)
-PAUSE_TEXT = pygame.font.SysFont('monospace', 32).render('Paused, press R to resume', True, pygame.color.Color(COLORS['pause']))
 
 def init_game_state(dimx, dimy, pattern=None, glider_count=None):
-    cells = np.zeros((dimy, dimx))
+    """Initialize the game state with specified dimensions and pattern."""
+
+    # Create an empty grid of specified dimensions
+    cells = np.zeros((dimy, dimx)) 
     if glider_count == 1:
         # Initialize with Gosper's glider gun
         pattern = np.array([[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
@@ -74,9 +77,11 @@ def init_game_state(dimx, dimy, pattern=None, glider_count=None):
     return cells
 
 def update_game_state(cur, sz, wrap):
+    """Update the game state for the next generation."""
+    
     # Pad the current array if wrap is False
     if not wrap:
-        cur = np.pad(cur, pad_width=1, mode='constant')
+        cur = np.pad(cur, pad_width=1, mode='constant') 
     
     # Create a new array for the next generation
     nxt = np.zeros_like(cur)
@@ -116,74 +121,97 @@ def update_game_state(cur, sz, wrap):
     return nxt, changed_indices
 
 def draw_cells(surface, cur, sz, changed_indices):
+    """Draw the cells on the game surface."""
+
+    # Fill the surface with background color
     surface.fill(COLORS['background'])
     for pos in changed_indices:
         # Check if the indices are within bounds of the cur array
         if pos[1] // sz < cur.shape[0] and pos[0] // sz < cur.shape[1]:
             color = COLORS['alive'] if cur[pos[1] // sz, pos[0] // sz] == 1 else COLORS['background']
+            # Draw cell rectangle
             pygame.draw.rect(surface, color, pygame.Rect(pos[0], pos[1], sz, sz))
 
-
 def render_game_info(surface, gen):
+    """Render game information on the game surface."""
+
+    # Generation text
     gentext = FONT.render(f"Generation: {gen}", 1, COLORS['text'])
     surface.blit(gentext, (0, surface.get_height() - 16))    
 
+    # Pause instructions text
     instructions = FONT.render('Press P to Pause',True, COLORS['text'])
     surface.blit(instructions, (surface.get_width()/2, surface.get_height() - 16))    
 
 
 def handle_events():
+    """Handle Pygame events."""
+
     for event in pygame.event.get():
         keys = pygame.key.get_pressed()
         if event.type == pygame.QUIT:
             quit_game()
         elif event.type == pygame.KEYDOWN and keys[pygame.K_p]:
             return True, 'paused'
-
+    
+    # Return running flag and state
     return True, 'running'
 
 def quit_game():
+    """Quit the game."""
     pygame.quit()
     quit()
 
 def handle_pause():
+    """Handle pause state."""    
     for event in pygame.event.get():
         keys = pygame.key.get_pressed()
         if event.type == pygame.QUIT:
             return False, 'stopped'
         elif event.type == pygame.KEYDOWN and keys[pygame.K_r]:
-            return 'running'
+            return 'running' # Return running state if R key is pressed
     return 'paused'
 
 def game_loop(dimx, dimy, cellsize, wrap, glider_count=None, pattern=None):
+    """Main game loop."""
+
+    # Create game surface, window title
     surface = pygame.display.set_mode((dimx * cellsize, dimy * cellsize))
     pygame.display.set_caption("Py Game of Life")
 
+    # Initialize game state
     cells = init_game_state(dimx, dimy, pattern, glider_count)
+    
+    clock = pygame.time.Clock()
     changed_indices = []
     gen = 0
-    clock = pygame.time.Clock()
-    running = True
-    state = 'running'
+    running = True      # Pause flag
+    state = 'running'   # State flag
 
     while running:
         running, state = handle_events()
         if state == 'running':
-            cells, changed_indices = update_game_state(cells, cellsize, wrap)  # Update cells and get changed indices
-            draw_cells(surface, cells, cellsize, changed_indices)
-            render_game_info(surface, gen)
-            # clock.tick(1)  # Limit frame rate to 1 FPS
-            pygame.display.update()
-            gen += 1
+            cells, changed_indices = update_game_state(cells, cellsize, wrap)   # Update cells and get changed indices
+            draw_cells(surface, cells, cellsize, changed_indices)               # Draw cells on surface
+            render_game_info(surface, gen)                          # Render game information
+            # clock.tick(1)                                         # Limit frame rate to 1 FPS
+            pygame.display.update()                                 # Update display
+            gen += 1                                                # Increment generation counter
 
         while state == 'paused':
             # surface.fill(COLORS['background'])  # Clear the screen
-            text_rect = PAUSE_TEXT.get_rect(center=(surface.get_width() // 2, surface.get_height() // 2))
-            surface.blit(PAUSE_TEXT, text_rect)
+            
+            pause_text = pygame.font.SysFont('monospace', 32)\
+                            .render('Paused, press R to resume', True,
+                                    pygame.color.Color(COLORS['pause']))       # Pause message text
+            text_rect = pause_text.get_rect(center=(surface.get_width() // 2, surface.get_height() // 2))
+            surface.blit(pause_text, text_rect)
             state = handle_pause()
             pygame.display.flip()
 
 def start_menu(screen):
+    """Display screen to start game."""
+
     # Display main menu elements
     screen.fill(COLORS['background'])
     title_text = FONT.render("Conway's Game of Life", True, COLORS['text'])
@@ -204,6 +232,8 @@ def start_menu(screen):
     return
 
 def wrap_menu(screen):
+    """Display screen to select wrap options."""
+
     # Display main menu elements
     screen.fill(COLORS['background'])
     title_text = FONT.render("Wrap cells?", True, COLORS['text'])
@@ -219,7 +249,7 @@ def wrap_menu(screen):
     no_wrap_text = FONT.render("Don't Wrap Cells.", True, COLORS['text'])
     screen.blit(no_wrap_text, (310, 415))
 
-    # Check if the start button is clicked
+    # Check if the wrap buttons are clicked
     mouse_pos = pygame.mouse.get_pos()
     if wrap_button.collidepoint(mouse_pos):
         if pygame.mouse.get_pressed()[0]:
@@ -234,7 +264,9 @@ def wrap_menu(screen):
     return 
 
 def ask_glider(screen):
-    # Display main menu elements
+    """Display screen to select glider options."""
+
+    # Display glider menu elements
     screen.fill(COLORS['background'])
     title_text = FONT.render("Run a Gosper's Glider Gun?", True, COLORS['text'])
     screen.blit(title_text, (300, 200))
@@ -249,7 +281,7 @@ def ask_glider(screen):
     no_text = FONT.render("NO", True, COLORS['text'])
     screen.blit(no_text, (510, 315))
 
-    # Check if the start button is clicked
+    # Check if glider buttons are clicked
     mouse_pos = pygame.mouse.get_pos()
     if no_button.collidepoint(mouse_pos):
         if pygame.mouse.get_pressed()[0]:
@@ -260,6 +292,7 @@ def ask_glider(screen):
         if pygame.mouse.get_pressed()[0]:
             GAME_VARS['glider'] = True
 
+    # If glider buttton clicked, display 1 or 2 option buttons
     if GAME_VARS['glider'] == True:    
         sub_title_text = FONT.render("1 or 2 Glider Guns?", True, COLORS['text'])
         screen.blit(sub_title_text, (325, 375))
@@ -288,7 +321,9 @@ def ask_glider(screen):
     return 
 
 def ask_gameSize(screen):
-    # Display main menu elements
+    """Display screen to select game size options."""
+
+    # Display size menu elements
     screen.fill(COLORS['background'])
     title_text = FONT.render("Select World Size:", True, COLORS['text'])
     screen.blit(title_text, (300, 50))
@@ -308,7 +343,7 @@ def ask_gameSize(screen):
     text_500 = FONT.render("500", True, COLORS['text'])
     screen.blit(text_500, (630, 115))
 
-    # Check if the start button is clicked
+    # Check if size buttons are clicked
     mouse_pos = pygame.mouse.get_pos()
     if button_100.collidepoint(mouse_pos):
         if pygame.mouse.get_pressed()[0]:
@@ -322,7 +357,8 @@ def ask_gameSize(screen):
         if pygame.mouse.get_pressed()[0]:
             GAME_VARS['s_size'] = 500
             return
-        
+    
+    # If size buttton clicked
     if GAME_VARS['s_size'] is not None:
         sub_title_text = FONT.render("Select Cell Size:", True, COLORS['text'])
         screen.blit(sub_title_text, (300, 250))
@@ -342,7 +378,7 @@ def ask_gameSize(screen):
         text_5 = FONT.render("5", True, COLORS['text'])
         screen.blit(text_5, (630, 300))
 
-        # Check if the start button is clicked
+        # Check if the size buttons are clicked
         if button_1.collidepoint(mouse_pos):
             if pygame.mouse.get_pressed()[0]:
                 GAME_VARS['c_size'] = 1
@@ -356,6 +392,7 @@ def ask_gameSize(screen):
                 GAME_VARS['c_size'] = 5
                 return
 
+    # If size buttton clicked
     if GAME_VARS['c_size'] is not None:
         sub_sub_title_text = FONT.render("Select probability of each cell to begin alive:", True, COLORS['text'])
         screen.blit(sub_sub_title_text, (100, 450))
@@ -375,7 +412,7 @@ def ask_gameSize(screen):
         text_5 = FONT.render("0.5", True, COLORS['text'])
         screen.blit(text_5, (630, 500))
 
-        # Check if the start button is clicked
+        # Check if the prob buttons are clicked
         if button_1.collidepoint(mouse_pos):
             if pygame.mouse.get_pressed()[0]:
                 GAME_VARS['c_prob'] = .1
@@ -393,24 +430,31 @@ def ask_gameSize(screen):
     return
 
 def game_logic(screen):
+    """Handle and display start menu screens."""
+
+    # Start Menu
     if GAME_VARS['start'] is None:
         start_menu(screen)
         return 
     
+    # Wrap Menu
     elif GAME_VARS['wrap'] is None:
         wrap_menu(screen)
         return  
 
+    # Glider Menu
     elif GAME_VARS['glider'] is None or GAME_VARS['glider_count'] is None:
         ask_glider(screen)
         return  # User hasn't chosen an option yet
     
+    # Size
     elif GAME_VARS['s_size'] is None or\
          GAME_VARS['c_size'] is None or\
          GAME_VARS['c_prob'] is None:
         ask_gameSize(screen)
         return
 
+    # Else run game, with selected parameters 
     else: 
         n, m = GAME_VARS['s_size'], GAME_VARS['s_size']
         probability = GAME_VARS['c_prob']
@@ -418,7 +462,8 @@ def game_logic(screen):
         game_loop(n, m, GAME_VARS['c_size'], GAME_VARS['wrap'], glider_count=None, pattern=pattern)
 
 def main():
-    pygame.init()
+    """Setup, Run Logic"""
+    
     pygame.display.set_caption("Conway's Game of Life")
 
     screen = pygame.display.set_mode((800, 600))
