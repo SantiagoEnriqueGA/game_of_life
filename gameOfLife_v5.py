@@ -10,6 +10,8 @@
 #       for initialization, event handling, and game loop execution
 #     Implemented Pause and Resume functionality 
 # V5: Moved all inputs into pygame
+#     Get Glider pattersn from CSVs
+#     Implemented Restart feature
 # ---------------------------------------------------------------------------
 
 import pygame
@@ -25,18 +27,28 @@ COLORS = {
     'text': 'red',  # Text color
 }
 GAME_VARS = {
-    'start': None,  # Game start flag
-    'wrap': None,  # Wrap cells flag
-    'glider': None,  # Gosper's glider gun flag
-    'glider_count': None,  # Number of glider guns
-    's_size': None,  # World size
-    'c_size': None,  # Cell size
-    'c_prob': None  # Probability of cells being alive initially
+    # 'start': None,  # Game start flag
+    # 'wrap': None,  # Wrap cells flag
+    # 'glider': None,  # Gosper's glider gun flag
+    # 'glider_count': None,  # Number of glider guns
+    # 's_size': None,  # World size
+    # 'c_size': None,  # Cell size
+    # 'c_prob': None  # Probability of cells being alive initially
 }
 
 # Initialize Pygame
 pygame.init()
 FONT = pygame.font.SysFont("monospace", 16)
+
+def reset_GAME_VARS():
+    GAME_VARS['start'] = None  # Game start flag
+    GAME_VARS['wrap'] = None  # Wrap cells flag
+    GAME_VARS['glider'] = None  # Gosper's glider gun flag
+    GAME_VARS['glider_count'] = None  # Number of glider guns
+    GAME_VARS['s_size'] = None  # World size
+    GAME_VARS['c_size'] = None  # Cell size
+    GAME_VARS['c_prob'] = None  # Probability of cells being alive initially
+    return
 
 def init_game_state(dimx, dimy, pattern=None, glider_count=None):
     """Initialize the game state with specified dimensions and pattern."""
@@ -45,27 +57,14 @@ def init_game_state(dimx, dimy, pattern=None, glider_count=None):
     cells = np.zeros((dimy, dimx)) 
     if glider_count == 1:
         # Initialize with Gosper's glider gun
-        pattern = np.array([[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-                            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-                            [0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0],
-                            [0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,1,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0],
-                            [1,1,0,0,0,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-                            [1,1,0,0,0,0,0,0,0,0,1,0,0,0,1,0,1,1,0,0,0,0,1,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-                            [0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-                            [0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-                            [0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]])
+        pattern = np.genfromtxt("glider.csv",
+                    delimiter=",", dtype=int)
+        
     elif glider_count == 2:
         # Initialize with two Gosper's glider guns
-        pattern = np.array([[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-                            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-                            [0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
-                            [0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,1,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,1,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0],
-                            [1,1,0,0,0,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0,0,0,0,1,1],
-                            [1,1,0,0,0,0,0,0,0,0,1,0,0,0,1,0,1,1,0,0,0,0,1,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,1,0,0,0,0,1,1,0,1,0,0,0,1,0,0,0,0,0,0,0,0,1,1],
-                            [0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0],
-                            [0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0],
-                            [0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0]])
-    
+        pattern = np.genfromtxt("gliders.csv",
+                    delimiter=",", dtype=int)
+        
     if (glider_count == 1 or glider_count == 2):
         # Position the pattern in the game grid
         pos = (3,3) # Position where the pattern starts
@@ -141,9 +140,12 @@ def render_game_info(surface, gen):
 
     # Pause instructions text
     instructions = FONT.render('Press P to Pause',True, COLORS['text'])
-    surface.blit(instructions, (surface.get_width()/2, surface.get_height() - 16))    
+    surface.blit(instructions, (surface.get_width()/2 - instructions.get_width()/2, surface.get_height() - 16))    
 
-
+    # Return to start
+    start = FONT.render('Pause and press S to Return to Start',True, COLORS['text'])
+    surface.blit(start, (surface.get_width() - start.get_width() , surface.get_height() - 16))    
+    
 def handle_events():
     """Handle Pygame events."""
 
@@ -170,7 +172,20 @@ def handle_pause():
             return False, 'stopped'
         elif event.type == pygame.KEYDOWN and keys[pygame.K_r]:
             return 'running' # Return running state if R key is pressed
+        elif event.type == pygame.KEYDOWN and keys[pygame.K_s]:
+            return 'restart' 
     return 'paused'
+
+# def handle_restart():
+#     """Handle restart."""    
+#     for event in pygame.event.get():
+#         keys = pygame.key.get_pressed()
+#         if event.type == pygame.QUIT:
+#             return False, 'stopped'
+#         elif event.type == pygame.KEYDOWN and keys[pygame.K_s]:
+#             return 'restart' 
+#     return 'running'
+
 
 def game_loop(dimx, dimy, cellsize, wrap, glider_count=None, pattern=None):
     """Main game loop."""
@@ -194,9 +209,11 @@ def game_loop(dimx, dimy, cellsize, wrap, glider_count=None, pattern=None):
             cells, changed_indices = update_game_state(cells, cellsize, wrap)   # Update cells and get changed indices
             draw_cells(surface, cells, cellsize, changed_indices)               # Draw cells on surface
             render_game_info(surface, gen)                          # Render game information
+
             # clock.tick(1)                                         # Limit frame rate to 1 FPS
             pygame.display.update()                                 # Update display
             gen += 1                                                # Increment generation counter
+
 
         while state == 'paused':
             # surface.fill(COLORS['background'])  # Clear the screen
@@ -208,6 +225,11 @@ def game_loop(dimx, dimy, cellsize, wrap, glider_count=None, pattern=None):
             surface.blit(pause_text, text_rect)
             state = handle_pause()
             pygame.display.flip()
+        
+        if state == 'restart':
+            reset_GAME_VARS()
+            main()
+
 
 def start_menu(screen):
     """Display screen to start game."""
@@ -451,6 +473,7 @@ def game_logic(screen):
     elif GAME_VARS['s_size'] is None or\
          GAME_VARS['c_size'] is None or\
          GAME_VARS['c_prob'] is None:
+        print(GAME_VARS)
         ask_gameSize(screen)
         return
 
@@ -463,6 +486,7 @@ def game_logic(screen):
 
 def main():
     """Setup, Run Logic"""
+    reset_GAME_VARS()
     
     pygame.display.set_caption("Conway's Game of Life")
 
