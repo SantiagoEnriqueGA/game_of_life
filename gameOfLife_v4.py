@@ -9,6 +9,7 @@
 # V4: Function decomposition, broke down the main function into smaller functions 
 #       for initialization, event handling, and game loop execution
 #     Implemented Pause and Resume functionality 
+#     main_menu() function
 # ---------------------------------------------------------------------------
 
 import pygame
@@ -137,7 +138,7 @@ def handle_pause():
             return 'running'
     return 'paused'
 
-def main(dimx, dimy, cellsize, wrap, glider_count=None, pattern=None):
+def game_loop(dimx, dimy, cellsize, wrap, glider_count=None, pattern=None):
     surface = pygame.display.set_mode((dimx * cellsize, dimy * cellsize))
     pygame.display.set_caption("Py Game of Life")
 
@@ -165,20 +166,58 @@ def main(dimx, dimy, cellsize, wrap, glider_count=None, pattern=None):
             state = handle_pause()
             pygame.display.flip()
 
-# Input handling and game initialization
-wrap_input = input("Do you want to wrap the cells? (Yes, No): ").lower()
-wrap = wrap_input == 'yes'
+def main_menu():
+    wrap_input = input("Do you want to wrap the cells? (Yes, No): ").lower()
+    wrap = wrap_input == 'yes'
 
-glider_input = input("Run a Gosper's Glider Gun, creating gliders? (Yes, No): ").lower()
-if glider_input == 'yes':
-    glider_count = int(input("1 or 2 Gliders? (1, 2): "))
-    main(120, 90, 8, wrap, glider_count)
-elif glider_input == 'no':
-    n = int(input("Enter world width: "))
-    m = int(input("Enter world height: "))
-    s = int(input("Enter cell size: "))
-    c = float(input("Determine chance of each cell starting with life (0:1): "))
-    pattern = np.random.choice([0, 1], size=(n, m), p=[1 - c, c])
-    main(n, m, s, wrap, None, pattern)
-else:
-    print("Invalid input.")
+    glider_input = input("Run a Gosper's Glider Gun, creating gliders? (Yes, No): ").lower()
+    if glider_input == 'yes':
+        glider_count = int(input("1 or 2 Gliders? (1, 2): "))
+        game_loop(120, 90, 8, wrap, glider_count)
+    elif glider_input == 'no':
+        n = int(input("Enter world width: "))
+        m = int(input("Enter world height: "))
+        s = int(input("Enter cell size: "))
+        c = float(input("Determine chance of each cell starting with life (0:1): "))
+        pattern = np.random.choice([0, 1], size=(n, m), p=[1 - c, c])
+        game_loop(n, m, s, wrap, None, pattern)
+    else:
+        print("Invalid input.")
+
+
+def main():
+    pygame.init()
+    pygame.display.set_caption("Conway's Game of Life")
+
+    screen = pygame.display.set_mode((800, 600))
+    clock = pygame.time.Clock()
+
+    running = True
+    while running:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+
+        screen.fill(COLORS['background'])
+        # Draw main menu elements
+        title_text = FONT.render("Conway's Game of Life", True, COLORS['text'])
+        screen.blit(title_text, (300, 200))
+
+        start_button = pygame.Rect(300, 300, 200, 50)
+        pygame.draw.rect(screen, COLORS['alive'], start_button)
+        start_text = FONT.render("START GAME!", True, 'red')  # Updated text to "BEGIN"
+        screen.blit(start_text, (350, 315))
+
+        # Check if the start button is clicked
+        mouse_pos = pygame.mouse.get_pos()
+        if start_button.collidepoint(mouse_pos):
+            if pygame.mouse.get_pressed()[0]:
+                main_menu()
+
+        pygame.display.flip()
+        # clock.tick(60)
+
+    pygame.quit()
+
+if __name__ == '__main__':
+    main()
