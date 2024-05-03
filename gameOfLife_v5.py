@@ -12,6 +12,7 @@
 # V5: Moved all inputs into pygame
 #     Get Glider pattersn from CSVs
 #     Implemented Restart feature
+#     Implemented clock speed control
 # ---------------------------------------------------------------------------
 
 import pygame
@@ -131,33 +132,42 @@ def draw_cells(surface, cur, sz, changed_indices):
             # Draw cell rectangle
             pygame.draw.rect(surface, color, pygame.Rect(pos[0], pos[1], sz, sz))
 
-def render_game_info(surface, gen):
+def render_game_info(surface, gen, speed):
     """Render game information on the game surface."""
 
     # Generation text
     gentext = FONT.render(f"Generation: {gen}", 1, COLORS['text'])
     surface.blit(gentext, (0, surface.get_height() - 16))    
 
+    # Generation speed text
+    gen_speed = FONT.render(f"Game Speed: {speed}", 1, COLORS['text'])
+    surface.blit(gen_speed, (0, surface.get_height() - 34))    
+
     # Pause instructions text
     instructions = FONT.render('Press P to Pause',True, COLORS['text'])
-    surface.blit(instructions, (surface.get_width()/2 - instructions.get_width()/2, surface.get_height() - 16))    
+    surface.blit(instructions, (surface.get_width() - instructions.get_width(), surface.get_height() - 34))    
 
     # Return to start
     start = FONT.render('Pause and press S to Return to Start',True, COLORS['text'])
     surface.blit(start, (surface.get_width() - start.get_width() , surface.get_height() - 16))    
     
-def handle_events():
+def handle_events(clock_speed):
     """Handle Pygame events."""
 
     for event in pygame.event.get():
         keys = pygame.key.get_pressed()
         if event.type == pygame.QUIT:
             quit_game()
-        elif event.type == pygame.KEYDOWN and keys[pygame.K_p]:
-            return True, 'paused'
+        if event.type == pygame.KEYDOWN and keys[pygame.K_p]:
+            return True, 'paused', clock_speed
+        if keys[pygame.K_DOWN]:
+            if clock_speed > 1: clock_speed-=1
+            return True, 'running', clock_speed
+        if keys[pygame.K_UP]:
+            return True, 'running', clock_speed+1
     
     # Return running flag and state
-    return True, 'running'
+    return True, 'running', clock_speed
 
 def quit_game():
     """Quit the game."""
@@ -176,17 +186,6 @@ def handle_pause():
             return 'restart' 
     return 'paused'
 
-# def handle_restart():
-#     """Handle restart."""    
-#     for event in pygame.event.get():
-#         keys = pygame.key.get_pressed()
-#         if event.type == pygame.QUIT:
-#             return False, 'stopped'
-#         elif event.type == pygame.KEYDOWN and keys[pygame.K_s]:
-#             return 'restart' 
-#     return 'running'
-
-
 def game_loop(dimx, dimy, cellsize, wrap, glider_count=None, pattern=None):
     """Main game loop."""
 
@@ -202,15 +201,17 @@ def game_loop(dimx, dimy, cellsize, wrap, glider_count=None, pattern=None):
     gen = 0
     running = True      # Pause flag
     state = 'running'   # State flag
+    clock_speed = 10
 
     while running:
-        running, state = handle_events()
+        running, state, clock_speed = handle_events(clock_speed)
         if state == 'running':
+            
             cells, changed_indices = update_game_state(cells, cellsize, wrap)   # Update cells and get changed indices
             draw_cells(surface, cells, cellsize, changed_indices)               # Draw cells on surface
-            render_game_info(surface, gen)                          # Render game information
-
-            # clock.tick(1)                                         # Limit frame rate to 1 FPS
+            render_game_info(surface, gen, clock_speed)                          # Render game information
+            
+            clock.tick(clock_speed)
             pygame.display.update()                                 # Update display
             gen += 1                                                # Increment generation counter
 
@@ -229,7 +230,6 @@ def game_loop(dimx, dimy, cellsize, wrap, glider_count=None, pattern=None):
         if state == 'restart':
             reset_GAME_VARS()
             main()
-
 
 def start_menu(screen):
     """Display screen to start game."""
@@ -473,7 +473,6 @@ def game_logic(screen):
     elif GAME_VARS['s_size'] is None or\
          GAME_VARS['c_size'] is None or\
          GAME_VARS['c_prob'] is None:
-        print(GAME_VARS)
         ask_gameSize(screen)
         return
 
