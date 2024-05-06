@@ -42,3 +42,11 @@ The game includes several screens for user interaction:
 3. **Glider Menu**: Decide if Gosper's glider gun should be used, and if so, how many.
 4. **Size Menu**: Select the size of the game world, cell size, and initial cell probability.
 
+## Screenshots
+
+![image](https://github.com/SantiagoEnriqueGA/gameOfLife/assets/50879742/c4f814f8-37d1-46ca-9d7d-70d1b52092a5)
+![image](https://github.com/SantiagoEnriqueGA/gameOfLife/assets/50879742/f1ac1cf0-baf6-4df0-aeb3-673d5bf62ef1)
+![image](https://github.com/SantiagoEnriqueGA/gameOfLife/assets/50879742/6cd879a5-dd13-4208-92b6-18ad84251a85)
+![image](https://github.com/SantiagoEnriqueGA/gameOfLife/assets/50879742/76eff2ca-8648-4d42-9500-d9d1376f8198)
+
+
